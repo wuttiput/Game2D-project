@@ -7,6 +7,7 @@ class Game:
         self.clock = pygame.time.Clock()
         self.running = True
         
+        
         # Groups: หัวใจของการจัดการ Sprite ใน Pygame
         self.all_sprites = pygame.sprite.Group()
 
