@@ -1,4 +1,4 @@
-import pygame
+import pygame,sys
 
 class Game:
     def __init__(self):
@@ -24,8 +24,14 @@ class Game:
         pygame.display.flip()
 
     def run(self):
-        while self.running:
+        while self.running :
             self.handle_input()
             self.update()
             self.draw()
             self.clock.tick(60)
+
+
+if __name__ == "__main__":
+    game = Game()
+    game.run()
+
