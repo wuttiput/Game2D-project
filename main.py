@@ -34,6 +34,8 @@ class Game:
             self.background.fill((20, 20, 40))
 
         self.running = True
+        
+        # Groups: หัวใจของการจัดการ Sprite ใน Pygame
         self.all_sprites = pygame.sprite.Group()
 
         # Menu / settings state
