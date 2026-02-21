@@ -26,7 +26,7 @@ class Game:
         self.clock = pygame.time.Clock()
         pygame.display.set_caption("Stupid Boat")
         try:
-            self.background = pygame.image.load("assets/background.jpg")
+            self.background = pygame.image.load("background.jpg")
             self.background = pygame.transform.scale(self.background, (800, 600))
         except Exception:
             # fallback: solid color surface

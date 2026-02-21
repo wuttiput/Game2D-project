@@ -1,53 +1,91 @@
 import pygame
-import random
 from pygame.math import Vector2
 
 class Boss(pygame.sprite.Sprite):
-    def __init__(self, pos, groups):
+    # [เพิ่ม] รับตัวแปร player เข้ามา เพื่อให้บอสรู้ว่าต้องเดินไปทางไหน
+    def __init__(self, pos, groups, player):
         super().__init__(groups)
         
-        # 1. ขนาดของ Boss (ขนาดใหญ่กว่าผู้เล่น)
-        self.image = pygame.Surface((150, 200)) # กว้าง 150 สูง 200
-        self.image.fill("purple") # สีม่วงให้ดูน่าเกรงขาม
+        self.image = pygame.Surface((150, 200)) 
+        self.image.fill("purple") 
         self.rect = self.image.get_rect(topleft = pos)
         
-        # 2. ระบบฟิสิกส์
+        self.player = player # เก็บข้อมูลผู้เล่นไว้ใช้อ้างอิง
+        
+        # ระบบฟิสิกส์ 2D (เหมือนของผู้เล่น)
         self.pos = Vector2(self.rect.center)
         self.direction = Vector2(0, 0)
-        self.speed = 2 # บอสตัวใหญ่จะเดินช้าลงหน่อยเพื่อให้ดูมีน้ำหนัก
+        self.speed = 2 
+        self.gravity = 0.5 
+        self.ground_y = 250 # ระดับพื้น ต้องเท่ากับของผู้เล่น
         
-        # 3. ระบบการเดินสุ่ม (Movement Timer)
-        self.move_timer = 0
-        self.move_duration = 1000 # จะสุ่มทิศทางใหม่ทุกๆ 1 วินาที (1000 ms)
-        self.last_move_time = pygame.time.get_ticks()
-
-    def get_random_direction(self):
-        """ สุ่มทิศทาง 8 ทิศ หรือหยุดนิ่ง """
-        choices = [(-1, 0), (1, 0), (0, -1), (0, 1),      # บน ล่าง ซ้าย ขวา
-                   (-1, -1), (1, 1), (-1, 1), (1, -1),   # แนวทแยง
-                   (0, 0)]                               # หยุดนิ่ง
-        pick = random.choice(choices)
-        self.direction = Vector2(pick)
-        
-        # ปรับความยาว vector ให้เท่ากับ 1 (ยกเว้นกรณีหยุดนิ่ง)
-        if self.direction.magnitude() != 0:
-            self.direction = self.direction.normalize()
+        # ระบบการหันหน้าและโจมตี
+        self.facing = 'left'
+        self.attack_range = 150 # ระยะโจมตี (กว้างมาก เพราะบอสตัวใหญ่)
+        self.is_attacking = False
+        self.attack_cooldown = 2000 # ดีเลย์การโจมตี (2 วินาที)
+        self.last_attack_time = 0
 
     def update_behavior(self):
-        """ จัดการเรื่องเวลาในการเปลี่ยนทิศทาง """
-        current_time = pygame.time.get_ticks()
+        """ AI ของบอส: เดินตามและโจมตี """
+        # ถ้ากำลังโจมตีอยู่ ให้ยืนนิ่งๆ
+        if self.is_attacking:
+            self.direction.x = 0
+            return
+
+        # คำนวณระยะห่างระหว่างบอสกับผู้เล่น (แกน X)
+        distance_x = self.player.rect.centerx - self.rect.centerx
         
-        if current_time - self.last_move_time >= self.move_duration:
-            self.get_random_direction()
-            # สุ่มเวลาเดินครั้งต่อไป (เช่น 0.5 - 2 วินาที) เพื่อไม่ให้เดินเป็นจังหวะเกินไป
-            self.move_duration = random.randint(500, 2000)
-            self.last_move_time = current_time
+        # เช็คว่าผู้เล่นอยู่ในระยะโจมตีหรือไม่ (ใช้ abs เพื่อแปลงค่าติดลบเป็นบวก)
+        if abs(distance_x) <= self.attack_range:
+            self.attack() # เข้าใกล้แล้ว สั่งโจมตี!
+        else:
+            # ถ้ายังไม่ถึง ให้เดินตาม
+            if distance_x > 0: # ผู้เล่นอยู่ทางขวา
+                self.direction.x = 1
+                self.facing = 'right'
+            else:              # ผู้เล่นอยู่ทางซ้าย
+                self.direction.x = -1
+                self.facing = 'left'
+
+    def attack(self):
+        """ ฟังก์ชันสั่งโจมตี """
+        current_time = pygame.time.get_ticks()
+        # เช็ค Cooldown ว่าพร้อมฟันรอบต่อไปหรือยัง
+        if current_time - self.last_attack_time >= self.attack_cooldown:
+            self.is_attacking = True
+            self.last_attack_time = current_time
+            
+            # [ตรงนี้คือจุดที่จะลดเลือดผู้เล่น]
+            print("Boss โจมตีผู้เล่น! ตู้มมมม!")
+            # สมมติว่าผู้เล่นมีฟังก์ชันรับดาเมจ: self.player.hp.take_damage(20)
+
+    def cooldowns(self):
+        """ ปลดล็อกสถานะการโจมตี """
+        if self.is_attacking:
+            current_time = pygame.time.get_ticks()
+            # ให้บอสยืนนิ่งฟันค้างไว้ 0.5 วินาที (500 ms) แล้วค่อยเดินต่อ
+            if current_time - self.last_attack_time >= 500:
+                self.is_attacking = False
 
     def move(self):
-        # เคลื่อนที่ตามทิศทางที่สุ่มได้
-        self.pos += self.direction * self.speed
-        self.rect.center = self.pos
+        """ ระบบการเคลื่อนที่และแรงโน้มถ่วง """
+        # แกน X (เดินซ้าย-ขวา)
+        self.pos.x += self.direction.x * self.speed
+        self.rect.centerx = self.pos.x
+        
+        # แกน Y (แรงโน้มถ่วง ดึงลงพื้น)
+        self.direction.y += self.gravity 
+        self.pos.y += self.direction.y
+        self.rect.centery = self.pos.y
+        
+        # ชนพื้น (ตกพื้น)
+        if self.rect.bottom >= self.ground_y:
+            self.rect.bottom = self.ground_y
+            self.pos.y = self.rect.centery
+            self.direction.y = 0
 
     def update(self):
         self.update_behavior()
+        self.cooldowns()
         self.move()

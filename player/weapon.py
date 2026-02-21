@@ -1,5 +1,5 @@
 import pygame
-from pygame import sprite, Surface, rect
+from pygame import sprite, Surface
 from pygame.math import Vector2
 
 class Weapon(sprite.Sprite):
@@ -7,20 +7,25 @@ class Weapon(sprite.Sprite):
         super().__init__(groups)
         self.player = player
         
-        # กำหนดขนาด Hitbox (เช่น ฟันไปข้างหน้า)
         self.image = Surface((40, 40)) 
-        self.image.fill("yellow") # ลองใส่สีเหลืองให้เห็นชัดๆ ก่อน
+        self.image.fill("yellow") 
         
-        # วางตำแหน่ง Hitbox ให้อยู่หน้าตัวผู้เล่น
-        self.rect = self.image.get_rect(midleft = player.rect.midright)
-        
-        self.spawn_time = pygame.time.get_ticks() # เวลาที่สร้าง Hitbox ขึ้นมา
-        self.duration = 300 # ระยะเวลาที่ Hitbox จะอยู่ (มิลลิวินาที)
+        # 1. เช็คว่าผู้เล่นหันไปทางไหนตอนสร้างอาวุธ
+        if self.player.facing == 'right':
+            self.rect = self.image.get_rect(midleft = player.rect.midright)
+        else: # ถ้าหันซ้าย
+            self.rect = self.image.get_rect(midright = player.rect.midleft)
+            
+        self.spawn_time = pygame.time.get_ticks() 
+        self.duration = 300 
 
     def update(self):
-        # ให้ Hitbox ติดตัวผู้เล่นไปตลอดเวลาที่ฟัน
-        self.rect.midleft = self.player.rect.midright
-        
+        # 2. ให้อาวุธตามติดผู้เล่นให้ถูกด้านตลอดเวลาที่ฟัน
+        if self.player.facing == 'right':
+            self.rect.midleft = self.player.rect.midright
+        else:
+            self.rect.midright = self.player.rect.midleft
+            
         current_time = pygame.time.get_ticks()
         if current_time - self.spawn_time > self.duration:
-            self.kill() # ลบ Hitbox ออกจากกลุ่มเมื่อหมดเวลา
+            self.kill()
